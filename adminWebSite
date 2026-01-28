@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>[관리자] 학생 출석관리</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #fff;
+      --accent: #004390c0;
+      --danger: #e95353;
+      --ok: #2aa55b
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: #111
+    }
+
+    .layout {
+      display: flex;
+      min-height: 100vh
+    }
+
+    aside {
+      width: 240px;
+      background: #0f1724;
+      color: #fff;
+      padding: 20px;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.08)
+    }
+
+    aside h2 {
+      margin: 0 0 12px;
+      font-size: 18px
+    }
+
+    aside .nav a {
+      display: block;
+      color: #cfe3ff;
+      text-decoration: none;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03)
+    }
+
+    main {
+      flex: 1;
+      padding: 20px
+    }
+
+    .top {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px
+    }
+
+    .card {
+      background: var(--card);
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06)
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #334155;
+      margin-bottom: 6px
+    }
+
+    input[type="text"],
+    input[type="time"],
+    input[type="number"],
+    select {
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #e6e9ee;
+      width: 180px
+    }
+
+    button {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer
+    }
+
+    button.ghost {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid rgb(0, 56, 119)
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 12px
+    }
+
+    .students,
+    .attendance {
+      max-height: 68vh;
+      overflow: auto;
+      margin-top: 12px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    th,
+    td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid #eef2f7;
+      font-size: 13px
+    }
+
+    th {
+      background: #fbfdff;
+      position: sticky;
+      top: 0
+    }
+
+    .status {
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+      display: inline-block
+    }
+
+    .st-present {
+      background: var(--ok)
+    }
+
+    .st-late {
+      background: #f59e0b
+    }
+
+    .st-early {
+      background: #8f96a5
+    }
+
+    .st-absent {
+      background: var(--danger)
+    }
+
+    .row-actions button {
+      margin-right: 6px
+    }
+
+    .small {
+      font-size: 12px;
+      color: #64748b
+    }
+
+    .flex {
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .right {
+      margin-left: auto
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 13px
+    }
+
+    .topbar {
+      display: flex;
+      gap: 8px;
+      align-items: center
+    }
+
+    .search {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #e6e9ee
+    }
+
+    button.save-btn {
+      background: #0051ad;
+    }
+
+    aside button {
+     
+      border: 1px solid transparent;
+      
+      transition: border-color 0.3s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    
+    .button-3d {
+      position: relative;
+      
+      box-shadow: 0 2px 0 0 #5d5d5d6c;
+     
+      transition: all 0.15s;
+     
+      border: none;
+
+      background: var(--accent);
+    }
+
+
+    .button-3d:hover {
+      top: -1px;
+      box-shadow: 0 3px 0 0 #003d639b;
+    }
+
+   
+    .button-3d:active {
+      top: 1px;
+
+      box-shadow: 0 0 0 0 #00233a;
+      
+    }
+
+    @media(max-width:1000px) {
+      .grid {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+      <h2>관리자</h2>
+      <div class="nav">
+        <a href="#" onclick="show('dashboard')">홈</a>
+        <a href="#" onclick="show('students')">학생 관리</a>
+        <a href="#" onclick="show('attendance')">출석 현황</a>
+      </div>
+      <p class="small" style="margin-top:12px">데이터는 MySQL 서버에 저장됩니다.</p>
+      <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:12px 0" />
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+
+
+        <button onclick="exportExcel()" class="button-3d">출석 현황 Excel 내보내기</button>
+
+        <button onclick="printAttendance()" class="button-3d">출석 현황 PDF/인쇄</button>
+      </div>
+    </aside>
+    <main>
+      <div id="dashboard" class="card" style="display:block">
+        <div class="topbar">
+          <h1 style="margin:0;font-size:20px">출석 현황</h1>
+          <div class="right muted">학생수: <span id="studentCount">0</span></div>
+        </div>
+
+        <div style="margin-top:12px" class="card">
+          <h3 style="margin:0 0 8px">수업 설정</h3>
+          <div class="controls">
+            <div>
+              <label>수업 시작시간</label>
+              <input type="time" id="startTime" value="09:00">
+            </div>
+            <div>
+              <label>수업 종료시간</label>
+              <input type="time" id="endTime" value="10:30">
+            </div>
+            <div>
+              <label>지각 허용(분)</label>
+              <input type="number" id="lateMinutes" value="10" min="0">
+            </div>
+            <div>
+              <label>출석 마감시간 (HH:MM)</label>
+              <input type="time" id="cutoffTime" value="09:30">
+            </div>
+            <div>
+              <label>조퇴 판단 (분)</label>
+              <input type="number" id="earlyThreshold" value="0" min="0">
+            </div>
+            <div style="align-self:end">
+              <button onclick="saveSettings()" class="save-btn">저장</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <h3 style="margin-top:0">요약</h3>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <div class="card" style="flex:1;min-width:160px">
+                <h4 style="margin:0">출석</h4>
+                <p id="summaryPresent" class="muted">0</p>
+              </div>
+              <div class="card" style="flex:1;min-width:160px">
+                <h4 style="margin:0">지각</h4>
+                <p id="summaryLate" class="muted">0</p>
+              </div>
+              <div class="card" style="flex:1;min-width:160px">
+                <h4 style="margin:0">조퇴</h4>
+                <p id="summaryEarly" class="muted">0</p>
+              </div>
+              <div class="card" style="flex:1;min-width:160px">
+                <h4 style="margin:0">결석</h4>
+                <p id="summaryAbsent" class="muted">0</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top:0">최근 출석 기록</h3>
+            <div id="recentList" style="max-height:240px;overflow:auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="students" class="card" style="display:none">
+        <div style="display:flex;align-items:center;gap:12px">
+          <h2 style="margin:0">학생 관리</h2>
+          <input id="searchStudent" class="search" placeholder="이름 또는 학번으로 검색" oninput="renderStudents()" />
+          <div class="right">
+            <button onclick="exportCSV()">CSV 내보내기</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="card">
+          <h4 style="margin:0 0 8px">학생 추가</h4>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="newId" type="text" placeholder="학번 (예: 2024001)">
+            <input id="newName" type="text" placeholder="이름">
+            <input id="newDept" type="text" placeholder="학과">
+            <button onclick="addStudent()">추가하기</button>
+          </div>
+        </div>
+
+        <div class="students card" id="studentTableWrap" style="margin-top:12px">
+          <table id="studentsTable">
+            <thead>
+              <tr>
+                <th>학번</th>
+                <th>이름</th>
+                <th>학과</th>
+                <th>액션</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="attendance" class="card" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px">
+          <h2 style="margin:0">출석 현황</h2>
+          <div class="right">
+            <button onclick="exportCSV()">CSV 내보내기</button>
+            <button class="ghost" onclick="exportExcel()">PDF 내보내기</button>
+
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="card">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label>날짜: <input type="date" id="attendanceDate" /></label>
+            <label>필터:
+              <select id="filterStatus" onchange="renderAttendance()">
+                <option value="all">전체</option>
+                <option value="present">출석</option>
+                <option value="late">지각</option>
+                <option value="early">조퇴</option>
+                <option value="absent">결석</option>
+              </select>
+            </label>
+            <div class="muted">(관리자가 직접 출석/퇴실 시간을 클릭으로 기록할 수 있습니다.)</div>
+          </div>
+        </div>
+
+        <div class="attendance card" style="margin-top:12px">
+          <table id="attendanceTable">
+            <thead>
+              <tr>
+                <th>학번</th>
+                <th>이름</th>
+                <th>학과</th>
+                <th>출석시간</th>
+                <th>퇴실시간</th>
+                <th>상태</th>
+                <th>액션</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+   
+    let store = {
+      students: [], 
+      attendance: {}, 
+      settings: { 
+        startTime: '09:00',
+        endTime: '10:30',
+        lateMinutes: 10,
+        cutoffTime: '09:30',
+        earlyThreshold: 0
+      }
+    };
+
+    function show(id) {
+        
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('students').style.display = 'none';
+        document.getElementById('attendance').style.display = 'none';
+        
+        
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = 'block';
+        }
+    }
+
+
+    function printAttendance() {
+   
+    const printContents = document.getElementById('attendance').innerHTML; 
+    
+    const originalContents = document.body.innerHTML; 
+
+   
+    const printStyle = `
+        <style>
+            /* 인쇄 시 레이아웃 복원 및 불필요한 요소 숨김 */
+            .layout, aside, .topbar, .row-actions, .controls { display: none !important; }
+            main, #attendance, #attendanceTable { display: block !important; width: 100% !important; margin: 0; padding: 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ccc; padding: 8px; font-size: 11px; }
+            th { background-color: #f0f0f0; }
+        </style>
+    `;
+
+  
+    document.body.innerHTML = `
+        ${printStyle}
+        <div class="printable-container" style="padding: 20px;">
+            <h1 style="margin-bottom: 20px;">출석 현황 (${document.getElementById('attendanceDate').value})</h1>
+            <div id="attendance" style="display:block; width:100%;">
+                ${printContents}
+            </div>
+        </div>
+    `;
+
+   
+    window.print(); 
+
+   
+    document.body.innerHTML = originalContents;
+    updateAll(); 
+}
+   
+    async function loadStudentsFromServer() {
+      try {
+        const response = await fetch('/api/students');
+        if (!response.ok) throw new Error('학생 목록 로드 실패');
+
+        const serverData = await response.json();
+        store.students = serverData.map(s => ({
+          id: String(s.student_id),
+          name: s.name,
+          dept: s.major
+        }));
+
+      } catch (error) {
+        console.error('학생 데이터 로드 오류:', error);
+        alert('학생 목록을 서버에서 불러오는 데 실패했습니다.');
+        store.students = [];
+      }
+    }
+
+async function exportAllCSV(){
+    try {
+        const response = await fetch('/api/attendance/all');
+        if (!response.ok) throw new Error('전체 기록 서버 로드 실패');
+        
+        const data = await response.json();
+
+       
+        const headers = ['날짜', '학번', '이름', '학과', '출석시간', '퇴실시간'];
+        const rows = [headers];
+
+        data.forEach(r => {
+            const attendanceDate = String(r.attendance_date).slice(0, 10);
+            const checkinTime = r.checkin_time ? String(r.checkin_time).replace('T', ' ').substring(0, 19) : '';
+            const checkoutTime = r.checkout_time ? String(r.checkout_time).replace('T', ' ').substring(0, 19) : '';
+            
+            rows.push([
+                attendanceDate,
+                r.student_id,
+                r.name,
+                r.major,
+                checkinTime,
+                checkoutTime
+            ]);
+        });
+
+        const csv = rows.map(r => r.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `attendance_all_records_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        alert('전체 출석 기록 CSV 파일이 생성되었습니다.');
+    } catch (error) {
+        alert('전체 CSV 내보내기 중 오류 발생: ' + error.message);
+    }
+}
+
+    async function loadAttendanceFromServer(dateStr) {
+      try {
+        const response = await fetch(`/api/attendance/${dateStr}`);
+        if (!response.ok) throw new Error('출석 기록 로드 실패');
+
+        const serverData = await response.json();
+        const attendanceForDate = {};
+
+        serverData.forEach(r => {
+          attendanceForDate[String(r.student_id)] = {
+            // DB에서 DATETIME으로 받으므로 ISO String으로 변환
+            checkin: r.checkin_time ? new Date(r.checkin_time).toISOString() : null,
+            checkout: r.checkout_time ? new Date(r.checkout_time).toISOString() : null
+          };
+        });
+
+        store.attendance[dateStr] = attendanceForDate;
+
+      } catch (error) {
+        console.error('출석 기록 로드 오류:', error);
+        alert('출석 기록을 서버에서 불러오는 데 실패했습니다.');
+        store.attendance[dateStr] = {};
+      }
+    }
+
+    async function loadSettingsFromServer() {
+      try {
+        const response = await fetch('/api/settings');
+        if (!response.ok) throw new Error('설정 로드 실패');
+        const data = await response.json();
+        store.settings = data;
+      } catch (error) {
+        console.error('설정 로드 오류: 서버에서 기본값 사용', error);
+
+      }
+    }
+
+
+    async function addStudent() {
+      const id = document.getElementById('newId').value.trim();
+      const name = document.getElementById('newName').value.trim();
+      const dept = document.getElementById('newDept').value.trim();
+      if (!id || !name) { alert('학번과 이름은 필수입니다.'); return; }
+
+      try {
+        const response = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: id, name: name, major: dept })
+        });
+
+        if (!response.ok) {
+          const errorDetail = await response.json();
+          throw new Error(errorDetail.message || '서버 오류로 학생 추가 실패');
+        }
+
+        document.getElementById('newId').value = ''; document.getElementById('newName').value = ''; document.getElementById('newDept').value = '';
+        await updateAll();
+        alert('학생이 성공적으로 추가되었습니다.');
+      } catch (error) {
+        alert('학생 추가 중 오류 발생: ' + error.message);
+      }
+    }
+
+    async function editStudent(id) {
+      const student = store.students.find(s => s.id === id);
+      const newName = prompt('이름을 입력하세요', student.name);
+      if (newName == null) return;
+      const newDept = prompt('학과를 입력하세요', student.dept || '');
+
+      try {
+        const response = await fetch(`/api/students/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName.trim(), major: newDept.trim() })
+        });
+
+        if (!response.ok) throw new Error('서버 오류로 학생 정보 수정 실패');
+
+        await updateAll();
+        alert('학생 정보가 수정되었습니다.');
+      } catch (error) {
+        alert('학생 정보 수정 중 오류 발생: ' + error.message);
+      }
+    }
+
+    async function removeStudent(id) {
+      if (!confirm('학생을 삭제하면 해당 학생의 출석 기록도 삭제됩니다. 계속할까요?')) return;
+
+      try {
+        const response = await fetch(`/api/students/${id}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('서버 오류로 학생 삭제 실패');
+
+        await updateAll();
+        alert('학생이 삭제되었습니다.');
+      } catch (error) {
+        alert('학생 삭제 중 오류 발생: ' + error.message);
+      }
+    }
+
+    async function updateAttendanceRecord(dateStr, studentId, type) {
+      const now = new Date().toISOString();
+      const data = {
+        student_id: studentId,
+        attendance_date: dateStr,
+        timestamp: now,
+        type: type
+      };
+
+      try {
+        const response = await fetch('/api/attendance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+          const errorDetail = await response.json();
+          throw new Error(errorDetail.message || `서버 오류로 ${type} 기록 실패`);
+        }
+
+        await renderAttendance();
+        alert(`${type === 'checkin' ? '출석' : '퇴실'}이 기록되었습니다.`);
+      } catch (error) {
+        alert(`출석 기록 중 오류 발생: ${error.message}`);
+      }
+    }
+
+    function markCheckin(dateStr, studentId) {
+      updateAttendanceRecord(dateStr, studentId, 'checkin');
+    }
+    function markCheckout(dateStr, studentId) {
+      updateAttendanceRecord(dateStr, studentId, 'checkout');
+    }
+
+    async function clearAttendance(dateStr, studentId) {
+      if (!confirm('해당 학생의 당일 출석기록을 삭제하시겠습니까? (DB에서 삭제)')) return;
+
+      try {
+        const response = await fetch(`/api/attendance/${dateStr}/${studentId}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('서버 오류로 출석 기록 삭제 실패');
+
+        await renderAttendance();
+        alert('출석 기록이 초기화되었습니다.');
+      } catch (error) {
+        alert('출석 기록 삭제 중 오류 발생: ' + error.message);
+      }
+    }
+
+    async function saveSettings() {
+      const s = {
+        startTime: document.getElementById('startTime').value,
+        endTime: document.getElementById('endTime').value,
+        cutoffTime: document.getElementById('cutoffTime').value,
+        lateMinutes: parseInt(document.getElementById('lateMinutes').value) || 0,
+        earlyThreshold: parseInt(document.getElementById('earlyThreshold').value) || 0
+      };
+
+      try {
+        const response = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(s)
+        });
+
+        if (!response.ok) {
+          throw new Error(response.statusText || '서버 오류로 설정 저장 실패');
+        }
+
+        alert('설정 저장됨');
+        await updateAll();
+
+      } catch (error) {
+        alert('설정 저장 중 오류 발생: ' + error.message);
+      }
+    }
+
+
+    function classify(dateStr, studentId) {
+      const s = store.settings;
+      const rec = (store.attendance[dateStr] || {})[studentId] || {};
+      const parseTimeToDate = (dateStr, timeHHMM) => {
+        const [hh, mm] = timeHHMM.split(':').map(Number);
+        const d = new Date(dateStr + 'T00:00:00');
+        d.setHours(hh, mm, 0, 0);
+        return d;
+      };
+      const startD = parseTimeToDate(dateStr, s.startTime);
+      const endD = parseTimeToDate(dateStr, s.endTime);
+      const cutoffD = parseTimeToDate(dateStr, s.cutoffTime);
+      const now = new Date();
+
+      const checkin = rec.checkin ? new Date(rec.checkin) : null;
+      const checkout = rec.checkout ? new Date(rec.checkout) : null;
+
+      if (!checkin) {
+        if (now > cutoffD) return { status: 'absent', reason: '미출석(마감시간 경과)' };
+        return { status: 'absent', reason: '미출석' };
+      }
+
+      const lateLimit = new Date(startD.getTime() + s.lateMinutes * 60000);
+      if (checkin > lateLimit) return { status: 'late', reason: `지각(체크인 ${formatTime(checkin)})` };
+      if (checkout && checkout < new Date(endD.getTime() - s.earlyThreshold * 60000)) return { status: 'early', reason: `조퇴(퇴실 ${formatTime(checkout)})` };
+      return { status: 'present', reason: `출석(체크인 ${formatTime(checkin)})` };
+    }
+
+    /* 렌더링 */
+    function renderStudents() {
+      const tbody = document.querySelector('#studentsTable tbody');
+      tbody.innerHTML = '';
+      const q = (document.getElementById('searchStudent').value || '').toLowerCase();
+      store.students.forEach(s => {
+        if (q && !(s.id + s.name + s.dept).toLowerCase().includes(q)) return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${s.id}</td><td>${s.name}</td><td>${s.dept || ''}</td>
+      <td class="row-actions">
+        <button onclick="editStudent('${s.id}')">수정</button>
+        <button onclick="removeStudent('${s.id}')">삭제</button>
+      </td>`;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('studentCount').innerText = store.students.length;
+    }
+
+    async function renderAttendance() {
+      const dateInput = document.getElementById('attendanceDate');
+      const dateStr = dateInput.value || (new Date()).toISOString().slice(0, 10);
+
+      await loadAttendanceFromServer(dateStr);
+
+      const tbody = document.querySelector('#attendanceTable tbody');
+      tbody.innerHTML = '';
+      const filter = document.getElementById('filterStatus').value;
+
+      store.students.forEach(s => {
+        const rec = store.attendance[dateStr] && store.attendance[dateStr][s.id] ? store.attendance[dateStr][s.id] : {};
+        const checkin = rec.checkin ? new Date(rec.checkin) : null;
+        const checkout = rec.checkout ? new Date(rec.checkout) : null;
+        const cls = classify(dateStr, s.id);
+        if (filter !== 'all' && ((filter === 'present' && cls.status !== 'present') || (filter === 'late' && cls.status !== 'late') || (filter === 'early' && cls.status !== 'early') || (filter === 'absent' && cls.status !== 'absent'))) return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+      <td>${s.id}</td>
+      <td>${s.name}</td>
+      <td>${s.dept || ''}</td>
+      <td>${checkin ? formatTime(checkin) : '<span class="small muted">-</span>'}</td>
+      <td>${checkout ? formatTime(checkout) : '<span class="small muted">-</span>'}</td>
+      <td><span class="status ${statusClass(cls.status)}">${statusLabel(cls.status)}</span></td>
+      <td>
+        <button onclick="markCheckinPrompt('${dateStr}','${s.id}')">출석</button>
+        <button onclick="markCheckoutPrompt('${dateStr}','${s.id}')">퇴실</button>
+        <button onclick="clearAttendance('${dateStr}','${s.id}')" class="ghost">초기화</button>
+      </td>
+    `;
+        tbody.appendChild(tr);
+      });
+      updateSummary(dateStr);
+    }
+
+    function statusLabel(k) {
+      if (k === 'present') return '출석';
+      if (k === 'late') return '지각';
+      if (k === 'early') return '조퇴';
+      return '결석';
+    }
+    function statusClass(k) {
+      if (k === 'present') return 'st-present';
+      if (k === 'late') return 'st-late';
+      if (k === 'early') return 'st-early';
+      return 'st-absent';
+    }
+    function formatTime(d) {
+      if (!d) return '';
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+    function markCheckinPrompt(dateStr, studentId) {
+      if (!confirm('현재 시간으로 출석 처리할까요?')) return;
+      markCheckin(dateStr, studentId);
+    }
+    function markCheckoutPrompt(dateStr, studentId) {
+      if (!confirm('현재 시간으로 퇴실 처리할까요?')) return;
+      markCheckout(dateStr, studentId);
+    }
+
+    function updateSummary(dateStr) {
+      const rows = store.students.map(s => ({ id: s.id, cls: classify(dateStr, s.id) }));
+      const present = rows.filter(r => r.cls.status === 'present').length;
+      const late = rows.filter(r => r.cls.status === 'late').length;
+      const early = rows.filter(r => r.cls.status === 'early').length;
+      
+      const absent = rows.filter(r => r.cls.status === 'absent').length; 
+      
+      document.getElementById('summaryPresent').innerText = present;
+      document.getElementById('summaryLate').innerText = late;
+      document.getElementById('summaryEarly').innerText = early;
+      document.getElementById('summaryAbsent').innerText = absent;
+
+      const recentWrap = document.getElementById('recentList');
+      recentWrap.innerHTML = '';
+      const recs = [];
+      if (store.attendance[dateStr]) {
+        for (const sid in store.attendance[dateStr]) {
+          const r = store.attendance[dateStr][sid];
+          const st = store.students.find(x => x.id === sid);
+          if (!st) continue;
+          recs.push({ time: r.checkin || r.checkout || '', text: `${st.name} (${st.id}) - ${r.checkin ? '체크인' : '퇴실'} ${r.checkin ? formatTime(new Date(r.checkin)) : formatTime(new Date(r.checkout))}` });
+        }
+      }
+      recs.sort((a, b) => (b.time || '').localeCompare(a.time || ''));
+      recs.slice(0, 8).forEach(r => {
+        const div = document.createElement('div');
+        div.style.padding = '6px 0'; div.style.borderBottom = '1px solid #f1f5f9';
+        div.innerHTML = `<div class="small">${r.text}</div>`;
+        recentWrap.appendChild(div);
+      });
+    }
+
+   
+    function exportCSV() {
+      const dateStr = document.getElementById('attendanceDate').value || (new Date()).toISOString().slice(0, 10);
+      const rows = [['date', 'studentId', 'name', 'dept', 'checkin', 'checkout', 'status', 'reason']];
+      store.students.forEach(s => {
+        const rec = store.attendance[dateStr] && store.attendance[dateStr][s.id] ? store.attendance[dateStr][s.id] : {};
+        const checkin = rec.checkin || '';
+        const checkout = rec.checkout || '';
+        const cls = classify(dateStr, s.id);
+        rows.push([dateStr, s.id, s.name, s.dept || '', checkin, checkout, cls.status, cls.reason]);
+      });
+      const csv = rows.map(r => r.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance_${dateStr}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportExcel() {
+      const dateStr = document.getElementById('attendanceDate').value || (new Date()).toISOString().slice(0, 10);
+      let html = '<table><thead><tr><th>date</th><th>studentId</th><th>name</th><th>dept</th><th>checkin</th><th>checkout</th><th>status</th><th>reason</th></tr></thead><tbody>';
+      store.students.forEach(s => {
+        const rec = store.attendance[dateStr] && store.attendance[dateStr][s.id] ? store.attendance[dateStr][s.id] : {};
+        const checkin = rec.checkin || '';
+        const checkout = rec.checkout || '';
+        const cls = classify(dateStr, s.id);
+        html += `<tr><td>${dateStr}</td><td>${s.id}</td><td>${s.name}</td><td>${s.dept || ''}</td><td>${checkin}</td><td>${checkout}</td><td>${cls.status}</td><td>${cls.reason}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance_${dateStr}.xls`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+async function exportAllCSV(){
+    try {
+        const response = await fetch('/api/attendance/all');
+        if (!response.ok) throw new Error('전체 기록 서버 로드 실패');
+        
+        const data = await response.json();
+
+       
+    const headers = ['날짜', '학번', '이름', '학과', '출석시간', '퇴실시간']; 
+    const rows = [headers];
+
+    data.forEach(r => {
+        const attendanceDate = String(r.attendance_date).slice(0, 10);
+        const checkinTime = r.checkin_time ? String(r.checkin_time).replace('T', ' ').substring(0, 19) : '';
+        const checkoutTime = r.checkout_time ? String(r.checkout_time).replace('T', ' ').substring(0, 19) : '';
+        
+        rows.push([
+            attendanceDate,
+            r.student_id,
+            r.name,
+            r.major,
+            checkinTime,
+            checkoutTime
+        ]);
+    });
+
+     
+        const csv = rows.map(r => r.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `attendance_all_records_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        alert('전체 출석 기록 CSV 파일이 생성되었습니다.');
+    } catch (error) {
+        alert('전체 CSV 내보내기 중 오류 발생: ' + error.message);
+    }
+}
+
+
+   
+    async function updateAll() {
+      await loadStudentsFromServer();
+      await loadSettingsFromServer();
+
+  
+      document.getElementById('startTime').value = store.settings.startTime;
+      document.getElementById('endTime').value = store.settings.endTime;
+      document.getElementById('cutoffTime').value = store.settings.cutoffTime;
+      document.getElementById('lateMinutes').value = store.settings.lateMinutes;
+      document.getElementById('earlyThreshold').value = store.settings.earlyThreshold;
+
+      if (!document.getElementById('attendanceDate').value) document.getElementById('attendanceDate').value = (new Date()).toISOString().slice(0, 10);
+
+      renderStudents();
+      await renderAttendance();
+    }
+
+
+    updateAll();
+    
+    window.store = store;
+    window.markCheckin = markCheckin;
+    window.markCheckout = markCheckout;
+    window.show = show;
+    </script>
